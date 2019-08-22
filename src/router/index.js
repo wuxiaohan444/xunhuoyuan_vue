@@ -15,18 +15,19 @@ import password from '@/pages/personage/password'
 import carryOn from  '@/pages/stock/carryOn'
 import addOrder from  '@/pages/stock/addOrder'
 import oneKaypull from  '@/pages/stock/oneKaypull'
+import grid from  '@/pages/stock/grid'
 
 
 Vue.use(Router);
 export default new Router({
     routes: [
         {
-            path: '/',
+            path: '/login',
             name: 'login',
             component: login
         },
         {
-            path: '/index',
+            path: '/',
             name: 'index',
             component: index
         }, {
@@ -81,6 +82,10 @@ export default new Router({
             path:'/aisleTest',
             name:'aisleTest',
             component:aisleTest
+        },{
+            path:'/grid',
+            name:'grid',
+            component:grid
         }
     ]
 })

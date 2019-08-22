@@ -1,5 +1,5 @@
 <template>
-    <div id="carryOn">
+    <div id="carryOn" v-if="pageShow">
         <div class="navigation-head"><img src="../../assets/images/back.png" alt="" class="back"
                                           @click="$router.back(-1)"><span>类型选择</span></div>
         <div class="counter-img">
@@ -51,7 +51,8 @@
                 type: '',
                 status: 1,
                 opacity: false,
-                statusText: ''
+                statusText: '',
+                pageShow: false
             }
         },
         created() {
@@ -60,43 +61,36 @@
         },
         methods: {
             getDeviceInfo() {
-                this.$axios({
-                    method: 'get',
-                    url: '/inspector/device/infoById/' + this.deviceId,
-                    params: {
-                        loginCode: localStorage.getItem('loginCode'),
+                this.$axios('get', '/inspector/device/infoById/' + this.deviceId, {loginCode: localStorage.getItem('loginCode')}, (res) => {
+                    let data = res.data;
+                    this.status = data.status;
+                    switch (this.status) {
+                        case 1:
+                            this.statusText = '开启';
+                            break;
+                        case 3:
+                            this.statusText = '禁用';
                     }
-                }).then((res) => {
-                    if (res.data.code === 0) {
-                        let data = res.data.data;
-                        this.status = data.status;
-                        switch (this.status) {
-                            case 1:
-                                this.statusText = '开启';
-                                break;
-                            case 3:
-                                this.statusText = '禁用';
-                        }
-                        if (this.status !== 1 && this.status !== 3) {
-                            this.opacity = true;
-                        }
-                        switch (data.structureId) {
-                            case 1:
-                                this.counterImg = require('../../assets/images/diandong.png');
-                                this.counterShow = true;
-                                this.typeName = '电机类';
-                                this.deviceInfo = data;
-                                this.type = 1;
-                                break;
-                            case 2:
-                                this.counterImg = require('../../assets/images/RFID.png');
-                                this.counterShow = false;
-                                this.typeName = 'RFID';
-                                this.deviceInfo = data;
-                                this.type = 2;
-                        }
+                    if (this.status !== 1 && this.status !== 3) {
+                        this.opacity = true;
                     }
-                })
+                    switch (data.structureId) {
+                        case 1:
+                            this.counterImg = require('../../assets/images/diandong.png');
+                            this.counterShow = true;
+                            this.typeName = '电机类';
+                            this.deviceInfo = data;
+                            this.type = 1;
+                            break;
+                        case 2:
+                            this.counterImg = require('../../assets/images/RFID.png');
+                            this.counterShow = false;
+                            this.typeName = 'RFID';
+                            this.deviceInfo = data;
+                            this.type = 2;
+                    }
+                    this.pageShow = true;
+                });
             },
 
             affirm() {
@@ -138,7 +132,7 @@
             },
             test() {
                 this.$router.push({
-                    path:'/aisleTest',
+                    path: '/aisleTest',
                     query: {
                         id: this.deviceId,
                     }
@@ -154,56 +148,30 @@
             },
             // 禁用
             disable() {
-                this.$axios({
-                    method: 'post',
-                    url: '/inspector/device/disable',
-                    data: this.$qs.stringify(
-                        {
-                            loginCode: localStorage.getItem('loginCode'),
-                            id: this.deviceId
-                        }
-                    )
-                }).then((res) => {
-                    if (res.data.code === 0) {
-                        this.status = 3;
-                        this.statusText = '禁用';
-                        this.bus.$emit('tips', {
-                            show: true,
-                            title: res.data.data
-                        })
-                    } else {
-                        this.bus.$emit('tips', {
-                            show: true,
-                            title: res.data.data
-                        })
-                    }
-                })
+                this.$axios('post', '/inspector/device/disable', {
+                    loginCode: localStorage.getItem('loginCode'),
+                    id: this.deviceId
+                }, (res) => {
+                    this.status = 3;
+                    this.statusText = '禁用';
+                    this.bus.$emit('tips', {
+                        show: true,
+                        title: res.data
+                    })
+                });
             },
             // 启用
             enable() {
-                this.$axios({
-                    method: 'post',
-                    url: '/inspector/device/enable',
-                    data: this.$qs.stringify(
-                        {
-                            loginCode: localStorage.getItem('loginCode'),
-                            id: this.deviceId
-                        }
-                    )
-                }).then((res) => {
-                    if (res.data.code === 0) {
-                        this.status = 1;
-                        this.statusText = '启用';
-                        this.bus.$emit('tips', {
-                            show: true,
-                            title: res.data.data
-                        })
-                    } else {
-                        this.bus.$emit('tips', {
-                            show: true,
-                            title: res.data.data
-                        })
-                    }
+                this.$axios('post', '/inspector/device/enable', {
+                    loginCode: localStorage.getItem('loginCode'),
+                    id: this.deviceId
+                }, (res) => {
+                    this.status = 1;
+                    this.statusText = '启用';
+                    this.bus.$emit('tips', {
+                        show: true,
+                        title: res.data
+                    })
                 })
             }
         }

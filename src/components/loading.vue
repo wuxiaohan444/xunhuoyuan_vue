@@ -37,7 +37,7 @@
         position: fixed;
         width: 100%;
         height: 100%;
-        background: rgba(0,0,0,0.4);
+        background: rgba(0,0,0,0.05);
         z-index: 999;
     }
     @-webkit-keyframes uil-default-anim {

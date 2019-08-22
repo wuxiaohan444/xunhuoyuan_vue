@@ -1,7 +1,7 @@
 <template>
     <div id="navigationBar">
         <div class="navigationBar-foot">
-            <router-link to="/index">
+            <router-link to="/">
                 <img :src="img1" alt="">
                 <p :class="pathIndex===1?'active':''">首页</p>
             </router-link>
@@ -32,7 +32,7 @@
         created() {
             this.path = this.$route.path;
             switch (this.path) {
-                case '/index':
+                case '/':
                     this.img1 = require('../assets/images/index2.png');
                     this.pathIndex = 1;
                     break;

@@ -29,6 +29,7 @@
     body, html, #app {
         color: #333333;
         height: 100%;
+        background: #ffffff;
     }
 
     #app {
@@ -47,6 +48,14 @@
 
     li {
         list-style: none;
+    }
+
+    .clearfloat:after {
+        display: block;
+        clear: both;
+        content: "";
+        visibility: hidden;
+        height: 0
     }
 
     /*头部*/

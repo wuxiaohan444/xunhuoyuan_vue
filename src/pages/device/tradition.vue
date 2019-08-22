@@ -27,10 +27,6 @@
                                 <div class="realNo">货道编号：{{item.realNo}}</div>
                                 <div>数量: <span>{{item.num}}</span> / {{item.maxNum}}</div>
                             </div>
-                            <div class="channel-btn" v-show="item.status!==1">
-                                <div class="testbtn" @click="test">测试</div>
-                                <div class="testbtn" @click="test">启用</div>
-                            </div>
                         </div>
                     </div>
                     <div class="noGoods" v-show="textHiht">暂无商品</div>
@@ -81,22 +77,14 @@
         },
         methods: {
             getInfo() {
-                this.$axios({
-                    method: 'get',
-                    url: '/inspector/device/traditionalByFloor/'+this.deviceId,
-                    params: {
-                        loginCode: localStorage.getItem('loginCode'),
-                    }
-                }).then((res) => {
-                    if (res.data.code === 0) {
-                        let data = res.data.data;
-                        this.tierNumber = data.map((a) => {
-                            return a.floor
-                        });
-                        this.countData = data;
-                        this.getTier(data, this.tierNumber[0])
-                    }
-                })
+                this.$axios("get", '/inspector/device/traditionalByFloor/' + this.deviceId, {loginCode: localStorage.getItem('loginCode')}, (res) => {
+                    let data = res.data;
+                    this.tierNumber = data.map((a) => {
+                        return a.floor
+                    });
+                    this.countData = data;
+                    this.getTier(data, this.tierNumber[0])
+                });
             },
 
             chooseIndex(index) {
@@ -128,31 +116,10 @@
                     this.textHiht = true
                 }
             },
-            test() {
-                this.$axios({
-                    method: 'get',
-                    url: '/inspector/channelGoods/sendTest',
-                    params: {
-                        loginCode: localStorage.getItem('loginCode'),
-                        id: this.deviceId
-                    }
-                }).then((res) => {
-                    alert(res.data.data)
-                })
-            },
-
             getGoods() {
-                this.$axios({
-                    method: 'get',
-                    url: '/inspector/device/traditionalByGoods/'+this.deviceId,
-                    params: {
-                        loginCode: localStorage.getItem('loginCode'),
-                    }
-                }).then((res) => {
-                    if (res.data.code === 0) {
-                        this.goodsList = res.data.data;
-                    }
-                })
+                this.$axios("get", '/inspector/device/traditionalByGoods/' + this.deviceId, {loginCode: localStorage.getItem('loginCode')}, (res) => {
+                    this.goodsList = res.data;
+                });
             }
         }
     }
@@ -242,14 +209,14 @@
                 }
                 .list-goods {
                     width: 400px;
-                    .channel-btn{
+                    .channel-btn {
                         display: flex;
                         justify-content: flex-end;
-                        >div{
-                            width:120px;
-                            height:56px;
-                            background:rgba(212,166,96,1);
-                            border-radius:6px;
+                        > div {
+                            width: 120px;
+                            height: 56px;
+                            background: rgba(212, 166, 96, 1);
+                            border-radius: 6px;
                             color: white;
                             text-align: center;
                             line-height: 56px;
@@ -260,7 +227,7 @@
                 .list-goods-info {
                     display: flex;
                     justify-content: space-between;
-                    .realNo{
+                    .realNo {
                         color: #999999;
                     }
                     > div {
@@ -283,6 +250,7 @@
     .goods-main {
         background: #f2f2f2;
         height: calc(~'100% - 165px');
+        overflow: scroll;
         .goods-main-item {
             height: 190px;
             box-shadow: 0 2px 0 0 rgba(35, 24, 21, 0.1);
@@ -314,24 +282,24 @@
         }
     }
 
-    .foot-btn{
+    .foot-btn {
         width: 100%;
         height: 88px;
         position: fixed;
         bottom: 0;
         left: 0;
         display: flex;
-        >div{
+        > div {
             text-align: center;
             line-height: 88px;
             color: white;
             font-size: 28px;
         }
-        >div:nth-child(1){
-            background:#5AA9E8;
+        > div:nth-child(1) {
+            background: #5AA9E8;
             flex: 1;
         }
-        >div:nth-child(2){
+        > div:nth-child(2) {
             background: #595CA1;
             flex: 2;
         }

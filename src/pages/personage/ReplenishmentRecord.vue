@@ -14,7 +14,7 @@
             <div @click="chooseEnd">结束时间：<span>{{endTime}}</span></div>
         </div>
 
-        <div :class="timeShow?'strut mainBottom':'mainBottom'">
+        <div :class="timeShow?'strut mainBottom':'mainBottom'" @scroll="scrollList" ref="list">
             <div class="replenishment_item clearfloat " v-for="(item,index) in recordList" :key="index">
                 <div class="item-title">
                     <img src="../../assets/images/order1.png" class="order">
@@ -24,11 +24,11 @@
                 <div class="item_bottom">
                     <div class="item_name">
                         <div>设备名称</div>
-                        <div>{{item.foo.device.nickName}}</div>
+                        <div>{{item.foo.device?item.foo.device.nickName:'暂无数据'}}</div>
                     </div>
                     <div class="item_name">
                         <div>机器编号</div>
-                        <div>{{item.foo.device.no}}</div>
+                        <div>{{item.foo.device?item.foo.device.no:'暂无数据'}}</div>
                     </div>
                 </div>
                 <div class="item_time">补货时间：{{item.createTime}}</div>
@@ -62,13 +62,12 @@
                 modelShow: false,
                 starShow: false,
                 endShow: false,
-                timeShow: false
+                timeShow: false,
             }
         },
         components: {Calendar},
         created() {
             this.getRecord();
-            window.addEventListener('scroll', this.getScroll);
         },
         methods: {
             getRecord() {
@@ -97,12 +96,11 @@
                     }
                 })
             },
-            getScroll() {
-                //可滚动容器的高度
-                let innerHeight = document.querySelector('.mainBottom').clientHeight;
-                let outerHeight = document.documentElement.clientHeight;
-                let scrollTop = document.documentElement.scrollTop || document.body.scrollTop || window.pageYOffset;
-                if (innerHeight - scrollTop < (outerHeight + 100) && this.control === true) {
+            scrollList() {
+                let a = this.$refs.list.scrollHeight;
+                let b = this.$refs.list.clientHeight;
+                let c = this.$refs.list.scrollTop;
+                if (a - (b + c) < 200 && this.control&&this.recordList.length>=10) {
                     this.control = false;
                     this.page++;
                     this.getRecord();
@@ -134,16 +132,13 @@
             }
 
         },
-        beforeDestroy() {
-            window.removeEventListener("scroll", this.getScroll);
-        },
     }
 </script>
 
 <style scoped lang="less">
     #ReplenishmentRecord {
         background: #f2f2f2;
-        min-height: 100%;
+        height: 100%;
         box-sizing: border-box;
     }
 

@@ -39,19 +39,11 @@
         },
         methods: {
             getChannelList() {
-                this.$axios({
-                    method: 'get',
-                    url: '/inspector/channelGoods/deviceAmountGoods?loginCode=' + localStorage.getItem('loginCode'),
-                    params: {
-                        deviceId: this.deviceId,
-                    }
-                }).then((res) => {
-                    if (res.data.code === 0) {
-                        let data = res.data.data;
-                        data.map((num) => num.choose = 0);
-                        this.channelList = data;
-                    }
-                })
+                this.$axios('get', '/inspector/channelGoods/deviceAmountGoods?loginCode=' + localStorage.getItem('loginCode'), {deviceId: this.deviceId}, (res) => {
+                    let data = res.data;
+                    data.map((num) => num.choose = 0);
+                    this.channelList = data;
+                });
             },
             // 选择货道
             chooseChannel(index, choose) {
@@ -71,16 +63,16 @@
                         channelGoodsIds = channelGoodsIds + "," + this.channelList[i].id
                     }
                 }
-                this.$axios({
-                    method: 'post',
-                    url: '/inspector/channelGoods/sendManyTest',
-                    data: this.$qs.stringify({
-                        loginCode: localStorage.getItem("loginCode"),
-                        deviceId: this.deviceId,
-                        channelGoodsIds: channelGoodsIds
-                    })
-                }).then((res) => {
-                    console.log(res.data.data);
+
+                this.$axios('post', '/inspector/channelGoods/sendManyTest', {
+                    loginCode: localStorage.getItem("loginCode"),
+                    deviceId: this.deviceId,
+                    channelGoodsIds: channelGoodsIds
+                }, (res) => {
+                    this.bus.$emit('tips', {
+                        show: true,
+                        title: res.data
+                    });
                 })
             },
             // 全货道测试
@@ -91,16 +83,15 @@
                 };
                 this.$refs.modalBox.confirm().then(() => {
                     this.modalShow = false;
-                    this.$axios({
-                        method: 'post',
-                        url: '/inspector/channelGoods/sendAllTest',
-                        data: this.$qs.stringify({
-                            loginCode: localStorage.getItem("loginCode"),
-                            deviceId: this.deviceId
-                        })
-                    }).then((res) => {
-                        console.log(res.data.data);
-                    })
+                    this.$axios('post', '/inspector/channelGoods/sendAllTest', {
+                        loginCode: localStorage.getItem("loginCode"),
+                        deviceId: this.deviceId
+                    }, (res) => {
+                        this.bus.$emit('tips', {
+                            show: true,
+                            title: res.data
+                        });
+                    });
                 }).catch(() => {
                     this.modalShow = false;
                 })
@@ -114,16 +105,15 @@
                         channelGoodsIds = channelGoodsIds + "," + this.channelList[i].id
                     }
                 }
-                this.$axios({
-                    method: 'post',
-                    url: '/inspector/channelGoods/enableMany',
-                    data: this.$qs.stringify({
-                        loginCode: localStorage.getItem("loginCode"),
-                        deviceId: this.deviceId,
-                        channelGoodsIds: channelGoodsIds
-                    })
-                }).then((res) => {
-
+                this.$axios('post', '/inspector/channelGoods/enableMany', {
+                    loginCode: localStorage.getItem("loginCode"),
+                    deviceId: this.deviceId,
+                    channelGoodsIds: channelGoodsIds
+                }, (res) => {
+                    this.bus.$emit('tips', {
+                        show: true,
+                        title: res.data
+                    });
                 })
             }
         }

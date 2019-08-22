@@ -26,7 +26,7 @@
         </div>
 
         <!--主体-->
-        <div class='main'>
+        <div class='main' @scroll="scrollList" ref="list">
             <div class="main-item" v-for="(item,index) in deviceList" :key="index">
                 <div class="main-item-title" @click="skip(item.structureId,item.id)">
                     <span class="">{{item.nickName}}</span>
@@ -51,6 +51,7 @@
                     </div>
                 </div>
             </div>
+            <div class="on_earth" v-show="onEarth">到底了</div>
         </div>
         <navigationBar></navigationBar>
     </div>
@@ -97,6 +98,8 @@
                 page: 1,
                 structureId: 0,
                 status: 0,
+                scrollFlag: true,
+                onEarth: false
             }
         },
         created() {
@@ -110,28 +113,24 @@
             this.getRequest()
         },
         methods: {
-            getRequest() {
-                this.$axios('get', '/inspector/device/listByStatus/' + this.status, {
-                    loginCode: localStorage.getItem('loginCode'),
-                    page: this.page,
-                    limit: 10
-                }, (res) => {
-                    this.deviceList = res.rows;
-                });
-            },
             sellGoodsIndex(index, id) {
                 this.changeRed = index;
                 this.status = id;
+                this.onEarth = false;
+                this.page = 1;
                 this.deviceList = [];
+                this.scrollFlag = true;
                 this.getRequest()
             },
             chooseDeviceClass(index) {
                 this.deviceClassIndex = index;
+                this.onEarth = false;
                 this.page = 1;
                 this.deviceList = [];
                 switch (index) {
                     case 0:
                         this.status = 0;
+                        this.changeRed = 0;
                         this.getRequest();
                         break;
                     case 1:
@@ -142,6 +141,10 @@
             },
             chooseIndex(index) {
                 this.titleIndex = index;
+                this.scrollFlag = true;
+                this.page = 1;
+                this.deviceList = [];
+                this.onEarth = false;
                 switch (index) {
                     case 0:
                         this.structureId = 0;
@@ -156,16 +159,6 @@
                         this.getData()
                 }
             },
-
-            getData() {
-                this.$axios('get', '/inspector/device/listByStructure/' + this.structureId, {
-                    loginCode: localStorage.getItem('loginCode'),
-                    page: this.page,
-                    limit: '10',
-                }, (res) => {
-                    this.deviceList = res.rows;
-                });
-            },
             skip(structureId, id) {
                 this.$router.push({
                     path: '/carryOn',
@@ -174,14 +167,51 @@
                     }
                 })
             },
-            lookDetails(id) {
-                this.$router.push({
-                    path: '/deviceDetails',
-                    query: {
-                        deviceId: id
+            getData() {
+                this.$axios('get', '/inspector/device/listByStructure/' + this.structureId, {
+                    loginCode: localStorage.getItem('loginCode'),
+                    page: this.page,
+                    limit: '10',
+                }, (res) => {
+                    this.deviceList = this.deviceList.concat(res.rows);
+                    if (this.deviceList.length < res.total) {
+                        this.scrollFlag = true;
+                    } else {
+                        this.onEarth = true;
                     }
-                })
-            }
+                });
+            },
+            getRequest() {
+                this.$axios('get', '/inspector/device/listByStatus/' + this.status, {
+                    loginCode: localStorage.getItem('loginCode'),
+                    page: this.page,
+                    limit: 10
+                }, (res) => {
+                    this.deviceList = this.deviceList.concat(res.rows);
+                    if (this.deviceList.length < res.total) {
+                        this.scrollFlag = true;
+                    } else {
+                        this.onEarth = true;
+                    }
+                });
+            },
+            scrollList() {
+                let a = this.$refs.list.scrollHeight;
+                let b = this.$refs.list.clientHeight;
+                let c = this.$refs.list.scrollTop;
+                if (a - (b + c) < 200 && this.scrollFlag&&this.deviceList.length>=10) {
+                    this.scrollFlag = false;
+                    this.page++;
+                    switch (this.deviceClassIndex) {
+                        case 0:
+                            this.getRequest();
+                            break;
+                        case 1:
+                            this.getData();
+                            break;
+                    }
+                }
+            },
         }
     }
 </script>
@@ -328,6 +358,11 @@
                 text-overflow: ellipsis;
                 white-space: nowrap;
             }
+        }
+        .on_earth {
+            font-size: 30px;
+            text-align: center;
+            line-height: 50px;
         }
     }
 </style>

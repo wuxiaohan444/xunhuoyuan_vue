@@ -18,7 +18,7 @@
                 </div>
                 <div class='detailMsg'>
                     <div>离线设备</div>
-                    <div>{{deviceInfo.activity}}</div>
+                    <div>{{deviceInfo.offline}}</div>
                 </div>
             </div>
             <div class='mainMsgDetails'>

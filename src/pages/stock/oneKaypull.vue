@@ -98,34 +98,25 @@
         },
         methods: {
             getReplenish() {
-                this.$axios({
-                    method: 'get',
-                    url: '/inspector/device/traditionalByFloor/' + this.deviceId,
-                    params: {
-                        loginCode: localStorage.getItem('loginCode'),
-                    },
-                }).then((res) => {
-                    if (res.data.code === 0) {
-                        let data = res.data.data;
-                        this.tierNumber = data.map((num) => {
-                            return num.floor
+                this.$axios('get', '/inspector/device/traditionalByFloor/' + this.deviceId, {loginCode: localStorage.getItem('loginCode')}, (res) => {
+                    let data = res.data;
+                    this.tierNumber = data.map((num) => {
+                        return num.floor
+                    });
+                    data.reduce((item, next) => {
+                        next.channelList.map((num) => {
+                            num.goodsNum = num.maxNum - num.num;
+                            return num
                         });
-                        data.reduce((item, next) => {
-                            next.channelList.map((num) => {
-                                num.goodsNum = num.maxNum - num.num;
-                                return num
-                            });
-                            return next
-                        }, []);
-                        this.channel = data;
-                        setTimeout(() => {
-                            for (let i = 0; i < this.channel.length; i++) {
-                                this.heightArr.push(this.$refs[this.channel[i].floor][0].offsetTop - (this.$refs.head.offsetHeight + this.$refs.top.offsetHeight))
-                            }
-                        }, 100);
-
-                    }
-                })
+                        return next
+                    }, []);
+                    this.channel = data;
+                    setTimeout(() => {
+                        for (let i = 0; i < this.channel.length; i++) {
+                            this.heightArr.push(this.$refs[this.channel[i].floor][0].offsetTop - (this.$refs.head.offsetHeight + this.$refs.top.offsetHeight))
+                        }
+                    }, 100);
+                });
             },
 
             orderScroll() {
@@ -153,17 +144,9 @@
                     for (let i = 0; i < this.channel.length; i++) {
                         goodsDetail = goodsDetail.concat(this.channel[i].channelList)
                     }
-                    this.$axios({
-                        method: 'post',
-                        url: '/inspector/goodsIn/traditionalCalculate/' + this.deviceId + '?loginCode=' + localStorage.getItem('loginCode'),
-                        data: goodsDetail,
-                    }).then((res) => {
-                        if (res.data.code === 0) {
-                            this.goodsList = res.data.data;
-                        } else {
-                            alert(res.data.data);
-                        }
-                    })
+                    this.$axios('POST', '/inspector/goodsIn/traditionalCalculate/' + this.deviceId + '?loginCode=' + localStorage.getItem('loginCode'), JSON.stringify(goodsDetail), (res) => {
+                        this.goodsList = res.data;
+                    }, "application/json", false);
                 }
             },
             save() {
@@ -177,48 +160,27 @@
                 };
 
                 this.$refs.modalBox.confirm().then(() => {
-                    this.bus.$emit('loading', true);
                     this.modalShow = false;
-                    this.$axios({
-                        method: 'post',
-                        url: '/inspector/goodsIn/traditionalAdd/' + this.deviceId + '?loginCode=' + localStorage.getItem('loginCode'),
-                        data: goodsDetail,
-                    }).then((res) => {
-                        if (res.data.code === 0) {
-                            this.checkStatus();
-                        } else {
-                            this.bus.$emit('loading', false);
-                            alert(res.data.data);
-                        }
-                    });
+                    this.$axios('post', '/inspector/goodsIn/traditionalAdd/' + this.deviceId + '?loginCode=' + localStorage.getItem('loginCode'), JSON.stringify(goodsDetail), (res) => {
+                        this.checkStatus();
+                    }, "application/json", false);
                 }).catch(() => {
                     this.modalShow = false;
                 })
-
             },
             checkStatus() {
-                this.$axios({
-                    method: 'get',
-                    url: '/inspector/device/infoById/' + this.deviceId + '?loginCode=' + localStorage.getItem('loginCode'),
-                }).then((res) => {
-                    if (res.data.code === 0) {
-                        let status = res.data.data.status;
-                        if (status === 1) {
-                            this.bus.$emit('loading', false);
-                            this.$router.push({
-                                path: '/index'
-                            })
-                        } else if (status === 3) {
-                            setTimeout(() => {
-                                this.checkStatus();
-                            }, 2000)
-                        }
-                    } else {
-                        this.bus.$emit('loading', false);
-                        alert(res.data.data);
+                this.$axios('get', '/inspector/device/infoById/' + this.deviceId, {loginCode: localStorage.getItem('loginCode')}, (res) => {
+                    let status = res.data.status;
+                    if (status === 1) {
+                        this.$router.push({
+                            path: '/'
+                        })
+                    } else if (status === 3) {
+                        setTimeout(() => {
+                            this.checkStatus();
+                        }, 2000)
                     }
                 });
-
             },
         }
     }

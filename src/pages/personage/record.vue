@@ -47,6 +47,7 @@
         padding: 20px;
         box-sizing: border-box;
         height: 100%;
+        overflow: scroll;
         .record-main-item {
             padding: 10px 20px;
             background: white;

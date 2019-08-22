@@ -9,37 +9,29 @@
         </div>
         <div class="box_left" v-if="titleIndex===0">
             <!--层数-->
-            <div :class="topShow?'tier chooseHieght':'tier'">
+            <div class="tier chooseHieght">
                 <div v-for="(item,index) in tierNumber"
                      :class="chooseIndex === index ? 'choose tier_number' : 'tier_number'"
-                     @click='sellGoodsIndex(index)'
-                     :key="index">{{item}}
+                     @click='sellGoodsIndex(index)' :key="index">
+                    {{item.name}}
+                    <div class="hint_point" v-if="item.status===1">i</div>
                 </div>
             </div>
             <!--内容-->
-            <div :class="topShow?'content chooseHieght':'content'" @scroll="orderScroll" ref="Box">
-                <div class="content_item" v-for="(item,index) in channel" :key="index" :id="index" :ref="item.floor">
+            <div class="content chooseHieght" @scroll="orderScroll" ref="Box">
+                <div class="content_item clearfloat" v-for="(item,index) in channel" :key="index" :id="index"
+                     :ref="item.floor">
                     <div class="content_title">{{item.floor}}</div>
                     <div class="content_main" v-for="(item,sub) in item.channelList" :key="sub">
                         <div class="goods_img" @click="goodsShow(item.id)">
-                            <img :src="ip+item.foo.goods.img">
+                            <img :src="ip+item.foo.goods.img" :class="item.num===0?'gray':''">
                         </div>
                         <div class="goods_info">
                             <div class="name">{{item.foo.goods.name}}</div>
-                            <div class="number">货道编号:{{item.showNo}}</div>
+                            <div class="number">格子编号:{{item.showNo}}</div>
                         </div>
-                        <div class="goods_choose" @click="chooseMultipleChannel(index,sub)">
-                            <img :src="item.choose===0?require('../../assets/images/choose.png'):require('../../assets/images/choose1.png')"
-                                 v-show="item.chooseShow">
-                        </div>
-                        <div class="item_number">
-                            <span @click="minusCount(index,sub)" class="minus">-</span>
-                            <input class="count" title="" v-model="item.goodsNum">
-                            <span @click="addCount(index,sub,item.maxNum)" class="add">+
-                        </span>
-                        </div>
-                        <div class="goods_sum">剩余数量:
-                            <span style="color: #595CA1">{{item.num===null?0:item.num}}</span>
+                        <div class="goods_choose" @click="chooseMultipleChannel(index,sub)" v-show="item.chooseShow">
+                            <img :src="item.choose===0?require('../../assets/images/choose.png'):require('../../assets/images/choose1.png')">
                         </div>
                     </div>
                 </div>
@@ -69,22 +61,27 @@
         </div>
         <!--底部-->
         <div class="add_footer">
-            <div class="add_footer-top" v-show="topShow">
-                <div class="top-left" @click="allChoose">
-                    <img :src="chooseAll===0?require('../../assets/images/choose.png'):require('../../assets/images/choose1.png')">
-                    <span>全选</span>
+            <div class="add_footer-top">
+                <div class="top-left">
+                    <div @click="allChoose">
+                        <img :src="chooseAll===0?require('../../assets/images/choose.png'):require('../../assets/images/choose1.png')">
+                        <span>全选</span>
+                    </div>
+                    <div @click="stockout">
+                        <img :src="stockoutChoose===0?require('../../assets/images/choose.png'):require('../../assets/images/choose1.png')">
+                        <span>缺货</span>
+                    </div>
                 </div>
+
                 <div class="btn" @click="goodsShow">
                     更换商品
                 </div>
             </div>
             <div class="add_footer_bottom">
-                <div class="multiple_choose" @click="multipleChoose">{{multipleText}}</div>
-                <div class="addPull" @click="oneKeyPull">一键加满</div>
+                <div class="multiple_choose" @click="multipleChoose">开门</div>
                 <div class="add_save" @click="save">保存</div>
             </div>
         </div>
-
         <!--商品-->
         <div class="goods" v-show="goods_show">
             <div class="navigation-head"><img src="../../assets/images/back.png" alt="" class="back"
@@ -119,9 +116,9 @@
                 chooseIndex: 0,
                 ip: this.fixedIp(),
                 chooseAll: 0,
+                stockoutChoose: 0,
                 multipleText: '多选',
                 multipleStatus: 0,
-                topShow: false,
                 chooseShow: false,
                 restsShow: false,
                 goods_show: false,
@@ -148,13 +145,16 @@
                 this.$axios('get', '/inspector/device/traditionalByFloor/' + this.deviceId, {loginCode: localStorage.getItem('loginCode')}, (res) => {
                     let data = res.data;
                     this.tierNumber = data.map((num) => {
-                        return num.floor
+                        return {name: num.floor, status: 0}
                     });
-                    data.reduce((item, next) => {
+                    data.reduce((item, next, index) => {
                         next.channelList.map((num) => {
+                            if (num.num === 0) {
+                                this.tierNumber[index].status = 1;
+                            }
                             num.choose = 0;
                             num.goodsNum = 0;
-                            num.chooseShow = false;
+                            num.chooseShow = true;
                             return num
                         });
                         return next
@@ -167,19 +167,6 @@
                     })
                 });
             },
-
-            getChoose(data, value) {
-                data.reduce((item, next) => {
-                    next.channelList.map((num) => {
-                        if (num.chooseShow) {
-                            num.choose = value;
-                        }
-                        return num
-                    });
-                    return next
-                }, []);
-            },
-
             orderScroll() {
                 let a = this.$refs.Box.scrollHeight;
                 let b = this.$refs.Box.clientHeight;
@@ -217,7 +204,6 @@
                     this.goods = this.goods.concat(res.rows)
                 });
             },
-
             sellGoodsIndex(index) {
                 this.chooseIndex = index;
                 document.getElementById(index).scrollIntoView(); //指定到某个位置
@@ -230,7 +216,7 @@
                 } else {
                     this.channel.reduce((item, next) => {
                         next.channelList.map((num) => {
-                            if (num.choose === 1) {
+                            if (num.choose === 1 && num.chooseShow) {
                                 channel.push(num.id);
                             }
                             return num
@@ -285,29 +271,10 @@
                     this.channel[index].channelList[sub].goodsNum++;
                     this.channel[index].channelList[sub].num++;
                 }
+
             },
             multipleChoose() {
-                if (this.multipleStatus === 0) {
-                    this.topShow = true;
-                    this.chooseShow = true;
-                    this.multipleText = '取消多选';
-                    this.multipleStatus = 1;
-                    for (let i = 0; i < this.channel.length; i++) {
-                        for (let j = 0; j < this.channel[i].channelList.length; j++) {
-                            this.channel[i].channelList[j].chooseShow = true;
-                        }
-                    }
-                } else {
-                    this.topShow = false;
-                    this.chooseShow = false;
-                    this.multipleText = '多选';
-                    this.multipleStatus = 0;
-                    for (let i = 0; i < this.channel.length; i++) {
-                        for (let j = 0; j < this.channel[i].channelList.length; j++) {
-                            this.channel[i].channelList[j].chooseShow = false;
-                        }
-                    }
-                }
+
             },
             allChoose() {
                 if (this.chooseAll === 0) {
@@ -318,6 +285,41 @@
                     this.getChoose(this.channel, 0)
                 }
             },
+            stockout() {
+                switch (this.stockoutChoose) {
+                    case 0:
+                        this.filtrateStockout(this.channel, 1);
+                        this.stockoutChoose = 1;
+                        break;
+                    case 1:
+                        this.filtrateStockout(this.channel, 0);
+                        this.stockoutChoose = 0;
+                        break;
+                }
+            },
+            getChoose(data, value) {
+                data.reduce((item, next) => {
+                    next.channelList.map((num) => {
+                        if (num.chooseShow) {
+                            num.choose = value;
+                            return num
+                        }
+                    });
+                    return next
+                }, []);
+            },
+            filtrateStockout(data, value) {
+                data.reduce((item, next) => {
+                    next.channelList.map((num) => {
+                        if (num.chooseShow && num.num === 0) {
+                            num.choose = value;
+                            return num
+                        }
+                    });
+                    return next
+                }, []);
+            },
+
             change(id) {
                 this.goodsId = id;
                 this.modalShow = true;
@@ -330,18 +332,20 @@
                     text: '确认更换商品吗？'
                 };
                 this.$refs.modalBox.confirm().then(() => {
-                    for (let i = 0; i < this.channel.length; i++) {
-                        for (let j = 0; j < this.channel[i].channelList.length; j++) {
-                            if (this.channelId.indexOf(this.channel[i].channelList[j].id) !== -1) {
-                                this.channel[i].channelList[j].goodsNum = 0;
-                                this.channel[i].channelList[j].num = 0;
-                                this.channel[i].channelList[j].foo.goods = this.changeGoodsInfo;
-                                this.channel[i].channelList[j].goodsId = this.goodsId;
-                                this.channel[i].channelList[j].chooseShow = false;
-                                this.channel[i].channelList[j].choose = 0;
+                    this.channel.reduce((item, next) => {
+                        next.channelList.map((num) => {
+                            if (this.channelId.indexOf(num.id) !== -1) {
+                                num.goodsNum = 1;
+                                num.num = 1;
+                                num.foo.goods = this.changeGoodsInfo;
+                                num.goodsId = this.goodsId;
+                                num.chooseShow = false;
+                                num.choose = 0;
+                                return num
                             }
-                        }
-                    }
+                        });
+                        return next
+                    }, []);
                     this.goods_show = false;
                     this.modalShow = false
                 }).catch(() => {
@@ -353,14 +357,13 @@
                 if (this.titleIndex === 1) {
                     let goodsDetail = [];
                     for (let i = 0; i < this.channel.length; i++) {
-                        goodsDetail = goodsDetail.concat(this.channel[i].channelList)
+                        goodsDetail = goodsDetail.concat(this.channel[i].channelList);
                     }
                     this.$axios('POST', '/inspector/goodsIn/traditionalCalculate/' + this.deviceId + '?loginCode=' + localStorage.getItem('loginCode'), JSON.stringify(goodsDetail), (res) => {
                         this.goodsList = res.data;
                     }, "application/json", false);
                 }
             },
-            //保存补货
             save() {
                 let goodsDetail = [];
                 for (let i = 0; i < this.channel.length; i++) {
@@ -370,6 +373,7 @@
                 this.modalOption = {
                     text: '确认提交补货单吗'
                 };
+
                 this.$refs.modalBox.confirm().then(() => {
                     this.modalShow = false;
                     this.$axios('post', '/inspector/goodsIn/traditionalAdd/' + this.deviceId + '?loginCode=' + localStorage.getItem('loginCode'), JSON.stringify(goodsDetail), (res) => {
@@ -379,7 +383,6 @@
                     this.modalShow = false;
                 })
             },
-            //检查状态是否保存成功
             checkStatus() {
                 this.$axios('get', '/inspector/device/infoById/' + this.deviceId, {loginCode: localStorage.getItem('loginCode')}, (res) => {
                     let status = res.data.status;
@@ -394,17 +397,6 @@
                     }
                 });
             },
-            // 一键加满
-            oneKeyPull() {
-                for (let i = 0; i < this.channel.length; i++) {
-                    for (let j = 0; j < this.channel[i].channelList.length; j++) {
-                        if (this.channel[i].channelList[j].goodsId) {
-                            this.channel[i].channelList[j].goodsNum = this.channel[i].channelList[j].maxNum - this.channel[i].channelList[j].num;
-                            this.channel[i].channelList[j].num = this.channel[i].channelList[j].maxNum;
-                        }
-                    }
-                }
-            }
         }
     }
 </script>
@@ -445,14 +437,25 @@
         background: #f3f3f3;
         margin-right: 20px;
         .tier_number {
-            display: block;
             width: 180px;
             height: 100px;
-            line-height: 100px;
-            text-align: center;
-            border-bottom: 1px solid #f3f3f3;
-            font-size: 32px;
-            color: #333333;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            .hint_point {
+                position: absolute;
+                right: 10px;
+                width: 30px;
+                height: 30px;
+                background: rgba(241, 73, 97, 1);
+                border-radius: 50%;
+                font-size: 24px;
+                line-height: 30px;
+                text-align: center;
+                color: white;
+                margin-left: 10px;
+            }
         }
         .choose {
             background: #FFFFFF;
@@ -491,67 +494,54 @@
             font-size: 34px;
             text-align: center;
             color: #333333;
+            box-shadow: 0px 2px 0px 0px rgba(35, 24, 21, 0.1);
         }
         .content_main {
-            border-top: 1px solid #f3f3f3;
-            height: 180px;
             padding-bottom: 20px;
             padding-top: 30px;
             position: relative;
+            width: 48%;
+            height: 240px;
+            float: left;
+            text-align: center;
             .goods_img {
-                width: 100px;
-                height: 100px;
-                float: left;
-                border: 2px solid #cccccc;
+                width: 150px;
+                height: 150px;
+                margin: 0 auto;
                 img {
                     width: 100%;
                     height: 100%;
                 }
+                img.gray {
+                    -webkit-filter: grayscale(100%);
+                    -moz-filter: grayscale(100%);
+                    -ms-filter: grayscale(100%);
+                    -o-filter: grayscale(100%);
+                    filter: grayscale(100%);
+                    filter: gray;
+                }
             }
             .goods_info {
+                width: 100%;
                 height: 100px;
-                padding-right: 10px;
-                /*margin-right: 40px;*/
-                margin-left: 120px;
-                width: 50%;
-
                 .number {
                     font-size: 26px;
                     color: rgba(153, 153, 153, 1);
                 }
+                .name {
+                    color: #333333;
+                    font-size: 28px;
+                    width: 100%;
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                    white-space: nowrap;
+                }
             }
             .item_number {
-                float: left;
-                padding-top: 20px;
-                padding-left: 30px;
+                color: #999999;
+                font-size: 26px;
             }
         }
-        .minus, .add, .count {
-            display: inline-block;
-            width: 60px;
-            height: 60px;
-            text-align: center;
-            vertical-align: middle;
-            line-height: 60px;
-            z-index: -1;
-        }
-        .count {
-            margin: 0 15px;
-        }
-        .minus, .add {
-            background: #D4A660;
-            color: white;
-            border-radius: 50%;
-            font-weight: 700;
-        }
-        .goods_sum {
-            float: right;
-            padding-top: 30px;
-            padding-right: 20px;
-            font-size: 26px;
-            color: rgba(153, 153, 153, 1);
-        }
-
         .goods_choose {
             position: absolute;
             right: 30px;
@@ -591,15 +581,20 @@
             .top-left {
                 display: flex;
                 align-items: center;
-            }
-            img {
-                width: 40px;
-                height: 40px;
-                margin-right: 20px;
-            }
-            span {
-                font-size: 26px;
-                color: #999999;
+                > div {
+                    display: flex;
+                    align-items: center;
+                    margin-right: 30px;
+                }
+                img {
+                    width: 40px;
+                    height: 40px;
+                    margin-right: 20px;
+                }
+                span {
+                    font-size: 26px;
+                    color: #999999;
+                }
             }
             .btn {
                 width: 150px;
@@ -621,15 +616,13 @@
                 color: white;
                 line-height: 98px;
                 text-align: center;
-                flex: 1;
-            }
-            .addPull {
-                background: #5ea6ff;
             }
             .multiple_choose {
+                flex: 1;
                 background: #D4A660;
             }
             .add_save {
+                flex: 2;
                 background: #595CA1;
             }
         }

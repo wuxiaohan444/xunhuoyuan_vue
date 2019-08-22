@@ -40,7 +40,7 @@
                 }, (res) => {
                     localStorage.setItem('loginCode', res.data);
                     this.$router.push({
-                        path: '/index'
+                        path: '/'
                     });
                 })
             }

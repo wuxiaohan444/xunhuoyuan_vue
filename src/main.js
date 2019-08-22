@@ -17,17 +17,19 @@ Vue.prototype.fixedIp = function () {//固定ip
     return link
 };
 
-export default function ajax(method, url, data, callback) {
+export default function ajax(method, url, data, callback, headers, isQs) {
     this.bus.$emit('loading', true);
     let way = method === 'post' || method === 'POST' ? 'data' : 'params';
-    data = method === 'post' || method === 'POST' ? qs.stringify(data) : data;
+    isQs = isQs === false ? isQs : true;
+    data = (method === 'post' || method === 'POST') && isQs ? qs.stringify(data) : data;
+    let header = headers ? headers : 'application/x-www-form-urlencoded;charset=UTF-8';
     axios({
         method: method,
         url: url,
         [way]: data,
         headers: {
-            'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
-        },
+            'Content-Type': header
+        }
     }).then((res) => {
         this.bus.$emit('loading', false);
         if (res.data.code === 0) {
@@ -40,18 +42,14 @@ export default function ajax(method, url, data, callback) {
             setTimeout(() => {
                 switch (res.data.code) {
                     case 1001:
-                        router.push("/");
+                        router.push("/login");
                         break;
                 }
             }, 500)
-
         }
     })
-
 }
 
-
-// axios.defaults.headers.post['Content-Type'] = 'application/x-www-form-urlencoded;charset=UTF-8';
 
 Vue.config.productionTip = false;
 Vue.prototype.$qs = qs;
