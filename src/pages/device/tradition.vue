@@ -28,6 +28,9 @@
                                 <div>数量: <span>{{item.num}}</span> / {{item.maxNum}}</div>
                             </div>
                         </div>
+                        <div class="choose" @click="chooseChannel(item.choose,index)"><img
+                                :src="item.choose===1?require('../../assets/images/choose1.png'):require('../../assets/images/choose.png')"
+                                alt=""></div>
                     </div>
                     <div class="noGoods" v-show="textHiht">暂无商品</div>
                 </div>
@@ -49,6 +52,17 @@
         <div class="foot-btn">
             <div>一键补满</div>
             <div>自定义补货</div>
+            <div @click="adjust">容量调整</div>
+        </div>
+        <div class="modal" v-show="adjustShow">
+            <div class="modal_box">
+                <h5 class="modal_title">容量调整</h5>
+                <input type="text" placeholder="填写调整数量" v-model="adjustNumber">
+                <div class="modal_btn">
+                    <div @click="listenerCancel">取消</div>
+                    <div @click="listenerConfirm">确认</div>
+                </div>
+            </div>
         </div>
     </div>
 </template>
@@ -67,7 +81,9 @@
                 countData: '',
                 ip: this.fixedIp(),
                 textHiht: false,
-                goodsList: []
+                goodsList: [],
+                adjustShow: false,
+                adjustNumber: ''
             }
         },
         created() {
@@ -83,7 +99,7 @@
                         return a.floor
                     });
                     this.countData = data;
-                    this.getTier(data, this.tierNumber[0])
+                    this.getTier(data, this.tierNumber[this.tierIndex])
                 });
             },
 
@@ -109,8 +125,11 @@
                     next.foo.hasOwnProperty("goods") && tierList1.push(next);
                     return next;
                 }, {foo: {}});
-
+                tierList1.map((num) => {
+                    num.choose = 0;
+                });
                 tierList.channelList = tierList1;
+
                 this.tierList = tierList;
                 if (tierList.channelList === 0) {
                     this.textHiht = true
@@ -120,6 +139,40 @@
                 this.$axios("get", '/inspector/device/traditionalByGoods/' + this.deviceId, {loginCode: localStorage.getItem('loginCode')}, (res) => {
                     this.goodsList = res.data;
                 });
+            },
+            adjust() {
+                this.adjustShow = true;
+            },
+            listenerCancel() {
+                this.adjustShow = false;
+            },
+            listenerConfirm() {
+                let channelGoodsIds = [];
+                for (let i = 0; i < this.tierList.channelList.length; i++) {
+                    if (this.tierList.channelList[i].choose === 1) {
+                        channelGoodsIds.push(this.tierList.channelList[i].id)
+                    }
+                }
+                this.$axios("post", '/inspector/device/adjustMaxNum', {
+                    loginCode: localStorage.getItem('loginCode'),
+                    channelGoodsIds: channelGoodsIds.join(','),
+                    num: this.adjustNumber
+                }, (res) => {
+                    this.bus.$emit('tips', {
+                        show: true,
+                        title: res.data
+                    });
+                    this.getInfo();
+                    this.adjustShow = false;
+                });
+            },
+            chooseChannel(choose, index) {
+                if (choose === 0) {
+                    this.tierList.channelList[index].choose = 1;
+                } else if (choose === 1) {
+                    this.tierList.channelList[index].choose = 0;
+                }
+                this.$forceUpdate()
             }
         }
     }
@@ -202,6 +255,7 @@
                 font-size: 28px;
                 color: #333333;
                 padding: 20px 0;
+                position: relative;
                 img {
                     width: 100px;
                     height: 100px;
@@ -222,6 +276,17 @@
                             line-height: 56px;
                             margin-left: 20px;
                         }
+                    }
+                }
+                .choose {
+                    position: absolute;
+                    width: 40px;
+                    height: 40px;
+                    right: 20px;
+                    top: 20px;
+                    img {
+                        width: 100%;
+                        height: 100%;
                     }
                 }
                 .list-goods-info {
@@ -294,14 +359,62 @@
             line-height: 88px;
             color: white;
             font-size: 28px;
+            flex: 1;
         }
         > div:nth-child(1) {
             background: #5AA9E8;
-            flex: 1;
         }
         > div:nth-child(2) {
             background: #595CA1;
-            flex: 2;
+        }
+        > div:nth-child(3) {
+            background: #d4a660;
+        }
+    }
+
+    .modal {
+        height: 100%;
+        width: 100%;
+        position: fixed;
+        top: 0;
+        left: 0;
+        background: rgba(0, 0, 0, 0.4);
+        .modal_box {
+            width: 590px;
+            height: 360px;
+            background-color: #ffffff;
+            border-radius: 8px;
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            .modal_title {
+                text-align: center;
+                line-height: 88px;
+                box-shadow: inset 0px -2px 0px 0px rgba(34, 24, 21, 0.1);
+                font-size: 32px;
+            }
+            input {
+                margin: 54px 20px;
+                width: 550px;
+                height: 80px;
+                background-color: #ffffff;
+                border-bottom: 1px solid rgba(34, 24, 21, 0.5);
+                color: #666;
+            }
+            .modal_btn {
+                display: flex;
+                > div {
+                    flex: 1;
+                    text-align: center;
+                    line-height: 80px;
+                    border-top: 1px solid rgba(34, 24, 21, 0.2);
+                    font-size: 32px;
+                }
+                > div:nth-child(1) {
+                    border-right: 1px solid rgba(34, 24, 21, 0.2);
+                }
+            }
         }
     }
 </style>

@@ -26,7 +26,7 @@
         </div>
 
         <!--主体-->
-        <div class='main' @scroll="scrollList" ref="list">
+        <div class='main' @scroll="scrollList" ref="list" v-if="deviceClassIndex===0">
             <div class="main-item" v-for="(item,index) in deviceList" :key="index">
                 <div class="main-item-title" @click="skip(item.structureId,item.id)">
                     <span class="">{{item.nickName}}</span>
@@ -53,6 +53,39 @@
             </div>
             <div class="on_earth" v-show="onEarth">到底了</div>
         </div>
+
+        <!--订单主体-->
+        <div class='main-box' ref="list1" @scroll="scrollList1" v-if="deviceClassIndex===1">
+            <div class="management-item" v-for="(item,index) in orderItem" :key="index">
+                <div class="item-title">
+                    <span class="time">{{item.createTime}}</span>
+                    <div :class="item.status===9?'state success':'state error'">
+                        {{item.status===9?'出货成功':item.status===0?"未支付":"出货失败"}}
+                    </div>
+                </div>
+                <div class="item-main clearfloat" v-for="(goods,childIndex) in item.goods" :key="childIndex">
+                    <img :src="ip+goods.img" class="left">
+                    <div class="middle">
+                        <span>{{goods.name}}</span>
+                        <span style="color: #93867d"> 机器：{{goods.name}}</span>
+                    </div>
+                    <div class="right">
+                        <span class="price" style="color: #595CA1">{{goods.discount}}</span>
+                        <span class="number">x{{goods.num}}</span>
+                        <span class="clear" v-if="item.status===9">
+                            出货口：{{goods.showNo}}
+                        </span>
+                    </div>
+                </div>
+                <div class="item-foot">
+                    <span style="color: #93867d">单号：{{item.no}}</span>
+                    <div>实付：
+                        <span style="color:#595CA1">{{item.realPrice==null?'0':item.realPrice}}</span>
+                    </div>
+                </div>
+            </div>
+            <div class="on_earth" v-show="onEarth">到底了</div>
+        </div>
         <navigationBar></navigationBar>
     </div>
 </template>
@@ -67,7 +100,7 @@
         },
         data() {
             return {
-                deviceClass: ['设备状态', '设备结构'],
+                deviceClass: ['设备状态', '设备订单'],
                 deviceClassIndex: 0,
                 changeRed: 0,
                 list: [
@@ -93,13 +126,15 @@
                     }],
                 device: '',
                 deviceList: [],
-                titleArr: ['所有货柜', '电机/格子柜', 'RFID货柜'],
+                titleArr: ['全部', '完成订单', '异常订单'],
                 titleIndex: 0,
                 page: 1,
-                structureId: 0,
                 status: 0,
                 scrollFlag: true,
-                onEarth: false
+                onEarth: false,
+                ip: this.fixedIp(),
+                orderItem: [],
+                type: ''
             }
         },
         created() {
@@ -127,6 +162,7 @@
                 this.onEarth = false;
                 this.page = 1;
                 this.deviceList = [];
+                this.orderItem = [];
                 switch (index) {
                     case 0:
                         this.status = 0;
@@ -134,7 +170,8 @@
                         this.getRequest();
                         break;
                     case 1:
-                        this.structureId = 0;
+                        this.type = '';
+                        this.titleIndex = 0;
                         this.getData()
                 }
 
@@ -143,19 +180,19 @@
                 this.titleIndex = index;
                 this.scrollFlag = true;
                 this.page = 1;
-                this.deviceList = [];
+                this.orderItem = [];
                 this.onEarth = false;
                 switch (index) {
                     case 0:
-                        this.structureId = 0;
+                        this.type = '';
                         this.getData();
                         break;
                     case 1:
-                        this.structureId = 1;
+                        this.type = 1;
                         this.getData();
                         break;
                     case 2:
-                        this.structureId = 2;
+                        this.type = 0;
                         this.getData()
                 }
             },
@@ -168,16 +205,17 @@
                 })
             },
             getData() {
-                this.$axios('get', '/inspector/device/listByStructure/' + this.structureId, {
+                this.$axios('get', '/inspector/order/selectOrder', {
                     loginCode: localStorage.getItem('loginCode'),
                     page: this.page,
                     limit: '10',
+                    type: this.type
                 }, (res) => {
-                    this.deviceList = this.deviceList.concat(res.rows);
-                    if (this.deviceList.length < res.total) {
+                    this.orderItem = this.orderItem.concat(res.rows);
+                    if (this.orderItem.length < res.total) {
                         this.scrollFlag = true;
                     } else {
-                        this.onEarth = true;
+                        this.onEarth = this.page !== 1;
                     }
                 });
             },
@@ -191,7 +229,7 @@
                     if (this.deviceList.length < res.total) {
                         this.scrollFlag = true;
                     } else {
-                        this.onEarth = true;
+                        this.onEarth = this.page !== 1;
                     }
                 });
             },
@@ -199,19 +237,22 @@
                 let a = this.$refs.list.scrollHeight;
                 let b = this.$refs.list.clientHeight;
                 let c = this.$refs.list.scrollTop;
-                if (a - (b + c) < 200 && this.scrollFlag&&this.deviceList.length>=10) {
+                if (a - (b + c) < 200 && this.scrollFlag && this.deviceList.length >= 10) {
                     this.scrollFlag = false;
                     this.page++;
-                    switch (this.deviceClassIndex) {
-                        case 0:
-                            this.getRequest();
-                            break;
-                        case 1:
-                            this.getData();
-                            break;
-                    }
+                    this.getRequest();
                 }
             },
+            scrollList1() {
+                let a = this.$refs.list1.scrollHeight;
+                let b = this.$refs.list1.clientHeight;
+                let c = this.$refs.list1.scrollTop;
+                if (a - (b + c) < 200 && this.scrollFlag && this.orderItem.length >= 10) {
+                    this.scrollFlag = false;
+                    this.page++;
+                    this.getData();
+                }
+            }
         }
     }
 </script>
@@ -359,10 +400,77 @@
                 white-space: nowrap;
             }
         }
-        .on_earth {
-            font-size: 30px;
-            text-align: center;
-            line-height: 50px;
+    }
+
+    /*订单*/
+    .main-box {
+        height: calc(~'100% - 290px');
+        overflow: scroll;
+        .management-item {
+            margin-bottom: 20px;
+            background: white;
+            .item-title {
+                height: 60px;
+                line-height: 60px;
+                border-bottom: 1px solid #f3f3f3;
+                font-size: 24px;
+                color: rgba(153, 153, 153, 1);
+                padding: 0 40px;
+            }
+            .state {
+                float: right;
+            }
+            .state.success {
+                color: #1cb932;
+            }
+            .state.error {
+                color: red;
+            }
+            .item-main {
+                padding: 20px 40px;
+                box-sizing: border-box;
+                font-size: 28px;
+                .left {
+                    width: 160px;
+                    height: 160px;
+                    float: left;
+                }
+                .middle {
+                    float: left;
+                    padding-left: 30px;
+                    padding-top: 20px;
+                    span {
+                        display: block;
+                        line-height: 60px;
+                    }
+                }
+                .right {
+                    float: right;
+                    color: #666666;
+                    span {
+                        display: block;
+                        text-align: right;
+                        line-height: 40px;
+                    }
+                }
+            }
+            .item-foot {
+                padding: 0 40px;
+                border-top: 1px solid #f3f3f3;
+                font-size: 24px;
+                line-height: 50px;
+                > div {
+                    float: right;
+                    span {
+                        color: #eac398;
+                    }
+                }
+            }
         }
+    }
+    .on_earth {
+        font-size: 30px;
+        text-align: center;
+        line-height: 50px;
     }
 </style>
